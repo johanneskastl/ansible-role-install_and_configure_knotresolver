@@ -62,12 +62,27 @@ Dependencies
 
 None
 
-Example Playbook
+Example Playbook for a simple validating resolver with (unencrypted) DNS and DNS-over-TLS
 ----------------
 
     - hosts: servers
       roles:
         - role: 'johanneskastl.install_and_configure_knotresolver'
+
+Example Playbook for a validating resolver with (unencrypted) DNS, DNS-over-TLS, DNS-over-HTPPS and an internal domain to be resolved internally
+----------------
+
+    - hosts: servers
+      roles:
+        - role: 'johanneskastl.install_and_configure_knotresolver'
+          internal_domains:
+            - example.com
+            - example.org
+          internal_forwarders:
+            - 192.0.2.6
+            - 192.0.2.7
+            - 192.0.2.8
+          validate_dnssec_on_internal_domains: false
 
 License
 -------
