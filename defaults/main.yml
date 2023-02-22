@@ -1,0 +1,26 @@
+---
+# install_and_configure_knotresolver/defaults/main.yml
+
+knotresolver_cache_size_megabytes: 100
+
+# Listen on loopback interfaces only?
+knotresolver_loopback_only: true
+
+# loopback interfaces for IPv4 or IPv6
+knotresolver_ipv4_interface: '127.0.0.1'
+knotresolver_ipv6_interface: '::1'
+
+# Which types of DNS requests should we serve?
+# This matches the vanilla configuration file from Debian 11
+
+knotresolver_enable_dns_ipv4: true
+knotresolver_enable_tls_ipv4: true
+knotresolver_enable_doh2_ipv4: false
+
+knotresolver_enable_dns_ipv6: true
+knotresolver_enable_tls_ipv6: true
+knotresolver_enable_doh2_ipv6: false
+
+# In case of internal domains being forwarded to special DNS server,
+# should those queries include DNSSEC validation?
+validate_dnssec_on_internal_domains: true
