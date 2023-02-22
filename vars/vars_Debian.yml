@@ -1,0 +1,6 @@
+---
+# install_and_configure_knotresolver/vars/vars_Debian.yml
+
+knotresolver_package: 'knot-resolver'
+knotresolver_service: 'kresd@1.service'
+knotresolver_config_file_path: '/etc/knot-resolver/kresd.conf'
