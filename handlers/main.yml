@@ -1,0 +1,7 @@
+---
+# install_and_configure_knotresolver/handlers/main.yml
+
+- name: 'Restart the knot-resolver service'
+  ansible.builtin.service:
+    name: "{{ knotresolver_service }}"
+    state: 'restarted'
