@@ -1,0 +1,63 @@
+--
+-- {{ ansible_managed }}
+--
+-- SPDX-License-Identifier: CC0-1.0
+-- vim:syntax=lua:set ts=4 sw=4:
+-- Refer to manual: https://knot-resolver.readthedocs.org/en/stable/
+
+-- Network interface configuration
+-- IPv4
+{% if knotresolver_enable_dns_ipv4 %}
+net.listen('{{ knotresolver_ipv4_interface }}', 53, { kind = 'dns' })
+{% endif %}
+{% if knotresolver_enable_tls_ipv4 %}
+net.listen('{{ knotresolver_ipv4_interface }}', 853, { kind = 'tls' })
+{% endif %}
+{% if knotresolver_enable_doh2_ipv4 %}
+net.listen('{{ knotresolver_ipv4_interface }}', 443, { kind = 'doh2' })
+{% endif %}
+
+-- Network interface configuration
+-- IPv6
+{% if knotresolver_enable_dns_ipv6 %}
+net.listen('{{ knotresolver_ipv6_interface }}', 53, { kind = 'dns', freebind = true })
+{% endif %}
+{% if knotresolver_enable_tls_ipv6 %}
+net.listen('{{ knotresolver_ipv6_interface }}', 853, { kind = 'tls', freebind = true })
+{% endif %}
+{% if knotresolver_enable_doh2_ipv6 %}
+net.listen('{{ knotresolver_ipv6_interface }}', 443, { kind = 'doh2' })
+{% endif %}
+
+{% if knotresolver_enable_tls_ipv4 | bool
+or knotresolver_enable_doh2_ipv4 | bool
+or knotresolver_enable_tls_ipv6 | bool
+or knotresolver_enable_doh2_ipv6 | bool
+%}
+-- TLS
+net.tls('{{ knotresolver_tls_crt_file_path }}', '{{ knotresolver_tls_key_file_path }}')
+
+{% endif %}
+{% if internal_domains is defined %}
+-- Forward requests for internal domains to one or more DNS servers
+-- https://knot-resolver.readthedocs.io/en/stable/modules-policy.html#replacing-part-of-the-dns-tree
+internalDomains = policy.todnames({'{{ internal_domains | join("','")}}'})
+{% if internal_forwarding_flags is defined %}
+policy.add(policy.suffix(policy.FLAGS({'{{ internal_forwarding_flags | join("','") }}'}), internalDomains))
+{% endif %}
+{% if validate_dnssec_on_internal_domains | bool  %}
+policy.add(policy.suffix(policy.FORWARD({'{{ internal_forwarders | join("','")  }}'}), internalDomains))
+{% else %}
+policy.add(policy.suffix(policy.STUB({'{{ internal_forwarders | join("','")  }}'}), internalDomains))
+{% endif %}
+
+{% endif %}
+-- Load useful modules
+modules = {
+	'hints > iterate',  -- Load /etc/hosts and allow custom root hints
+	'stats',            -- Track internal statistics
+	'predict',          -- Prefetch expiring/frequent records
+}
+
+-- Cache size
+cache.size = {{ knotresolver_cache_size_megabytes }} * MB
