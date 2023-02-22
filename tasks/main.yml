@@ -1,0 +1,58 @@
+---
+# install_and_configure_knotresolver/tasks/main.yml
+
+- name: 'Load variables depending on the OS'
+  ansible.builtin.include_vars: "{{ lookup('ansible.builtin.first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "vars_{{ ansible_distribution | replace(' ', '_') }}_{{ ansible_distribution_version }}.yml"
+        - "vars_{{ ansible_distribution | replace(' ', '_') }}_{{ ansible_distribution_major_version }}.yml"
+        - "vars_{{ ansible_distribution | replace(' ', '_') }}.yml"
+        - "vars_{{ ansible_os_family }}.yml"
+      paths:
+        - 'vars'
+
+- name: 'Set knotresolver_ipv4_interface if knotresolver_loopback_only is false'
+  ansible.builtin.set_fact:
+    knotresolver_ipv4_interface: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+  when:
+    - 'not knotresolver_loopback_only | bool'
+
+- name: 'Set knotresolver_ipv6_interface if knotresolver_loopback_only is false'
+  ansible.builtin.set_fact:
+    knotresolver_ipv6_interface: "{{ hostvars[inventory_hostname]['ansible_default_ipv6']['address'] | default('::') }}"
+  when:
+    - 'not knotresolver_loopback_only | bool'
+    - '
+      knotresolver_enable_dns_ipv6 | bool
+      or knotresolver_enable_tls_ipv6 | bool
+      or knotresolver_enable_doh2_ipv6 | bool
+      '
+
+- name: 'Install the package'
+  ansible.builtin.package:
+    name: "{{ knotresolver_package }}"
+
+- name: 'Create the configuration file'
+  ansible.builtin.template:
+    src: 'kresd.conf.j2'
+    dest: "{{ knotresolver_config_file_path }}"
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify:
+    - 'Restart the knot-resolver service'
+
+- name: 'Flush handlers to restart the service'
+  ansible.builtin.meta: flush_handlers
+
+- name: 'Start the service'
+  ansible.builtin.service:
+    name: "{{ knotresolver_service }}"
+    state: 'started'
+
+- name: 'Enable the service'
+  ansible.builtin.service:
+    name: "{{ knotresolver_service }}"
+    enabled: true
